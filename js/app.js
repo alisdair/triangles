@@ -99,7 +99,25 @@ Triangles = {
 			that.clicks += 1;
 		});
 
-		window.setInterval(function() {
+		window.requestAnimFrame = (function(){
+			return  window.requestAnimationFrame ||
+			window.webkitRequestAnimationFrame   ||
+			window.mozRequestAnimationFrame      ||
+			window.oRequestAnimationFrame        ||
+			window.msRequestAnimationFrame       ||
+			function(callback){
+				window.setTimeout(callback, 1000 / 60);
+			};
+		})();
+
+		this.refresh = true;
+
+		(function animate() {
+			requestAnimFrame(animate);
+			if (!that.refresh)
+				return;
+			that.refresh = false;
+
 			var colours = [];
 			var won = false;
 			for (var i = 0; i < that.triangles.length; i++) {
@@ -113,7 +131,7 @@ Triangles = {
 			if (colours.length == 1)
 				score += " - you win!";
 			$("#score").html(score);
-		}, 1000/15);
+		})();
 	},
 
 	flip: function(t) {
@@ -132,6 +150,8 @@ Triangles = {
 	propagate: function(ts, from, to) {
 		if (ts.length == 0)
 			return;
+
+		this.refresh = true;
 
 		var matches = [];
 		for (var i = 0; i < ts.length; i++) {
