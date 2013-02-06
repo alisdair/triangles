@@ -1,0 +1,38 @@
+#!/bin/bash
+
+set -e
+
+REPO=https://github.com/alisdair/doofer
+
+# I like Sublime Text, but maybe you prefer TextMate or vim...
+TEXT_EDITOR=subl
+[[ $VISUAL == mate* ]] && TEXT_EDITOR=mate
+[[ $VISUAL == vim* ]] && TEXT_EDITOR=mvim
+
+usage() {
+  echo >&2 "Usage: $0 app-name"
+  exit 1
+}
+
+[[ $# -eq 0 ]] && usage
+
+app=$1
+
+# Clone and remove git history
+git clone https://github.com/alisdair/doofer $app
+cd $app
+rm -rf .git
+
+# Set up gems and pow
+bundle install
+[[ -e ~/.pow/$app ]] && rm ~/.pow/$app
+ln -s $PWD ~/.pow/$app
+
+# Start your git repository
+git init
+git add .
+git commit -m "Initial commit"
+
+# Open the site, then edit the three main files as a project
+open "http://$app.dev/"
+$TEXT_EDITOR haml/index.haml js/app.js sass/screen.sass .
