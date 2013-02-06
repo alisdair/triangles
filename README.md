@@ -1,11 +1,5 @@
-# Doofer
+# Triangles
 
-Quickly prototype your web ideas using HAML, SASS, and jQuery.
+Click on triangles to change to a random colour. Make all triangles the same colour to win.
 
-Usage:
-
-1. Install pow if you haven't already: `curl get.pow.cx | sh`
-2. Download the doofer script: https://raw.github.com/alisdair/doofer/master/bin/doofer
-3. Place it in `~/bin` or `/usr/local/bin`, and `chmod +x`
-4. `doofer myapp`
-5. Create something awesome!
+A silly hack to demo canvas for a @tictocfamily blog. Apologies for how awful the code is.
