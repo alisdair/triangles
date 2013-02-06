@@ -59,6 +59,14 @@ Triangle.prototype = {
 		context.stroke();
 		context.closePath();
 	},
+
+	equals: function(other) {
+		return other && other.x == this.x && other.y == this.y;
+	},
+
+	toString: function() {
+		return "(" + this.x + ", " + this.y + ", " + this.colour + ")";
+	}
 }
 
 Triangles = {
@@ -67,6 +75,7 @@ Triangles = {
 		this.context = context;
 		this.width = canvas.width;
 		this.height = canvas.height;
+		this.clicks = 0;
 
 		context.fillStyle = "#999";
 		context.fillRect(0, 0, this.width, this.height);
@@ -86,71 +95,129 @@ Triangles = {
 			y -= 2; // I do not know why this is necessary.
 
 			var t = that.at(x, y);
-			var oc = t.colour;
-			while (t.colour == oc)
-				t.colour = Colours.random();
-			that.draw();
+			that.flip(t);
+			that.clicks += 1;
 		});
 
-		this.draw();
+		window.setInterval(function() {
+			var colours = [];
+			var won = false;
+			for (var i = 0; i < that.triangles.length; i++) {
+				var t = that.triangles[i];
+				if (colours.indexOf(t.colour) == -1)
+					colours.push(t.colour);
+
+				t.draw(that.context);
+			}
+			var score = "Clicks: " + that.clicks;
+			if (colours.length == 1)
+				score += " - you win!";
+			$("#score").html(score);
+		}, 1000/15);
 	},
 
-	draw: function() {
-		for (var i = 0; i < this.triangles.length; i++) {
-			this.triangles[i].draw(this.context);
+	flip: function(t) {
+		if (typeof t == "undefined") {
+			return;
 		}
+
+		// Change the colour to something else
+		var c = t.colour;
+		while (c == t.colour)
+			c = Colours.random();
+
+		this.propagate([t], t.colour, c);
+	},
+
+	propagate: function(ts, from, to) {
+		if (ts.length == 0)
+			return;
+
+		var matches = [];
+		for (var i = 0; i < ts.length; i++) {
+			var t = ts[i];
+
+			if (t.colour != from)
+				continue;
+			t.colour = to;
+
+			var others = this.surrounding(t);
+
+			for (var j = 0; j < others.length; j++) {
+				var tt = others[j];
+				if (!tt || tt.colour != from)
+					continue;
+
+				var includes = function(xs, y) {
+					for (var k = 0; k < xs.length; k++) {
+						var x = xs[k];
+						if (x.equals(y))
+							return true;
+					}
+					return false;
+				};
+
+				if (!includes(matches, tt))
+					matches.push(tt);
+			}
+		}
+
+		var that = this;
+		window.setTimeout(function() { that.propagate(matches, from, to); }, 100);
 	},
 
 	at: function(x, y) {
 		if (x < 0 || y < 0)
 			return undefined;
 
-		console.log("\n\n");
-
-		console.log(x + ", " + y);
 		var rh = Settings.height;
 		var row = Math.floor(y / rh);
-		console.log("row: " + row);
 
 		var dy = y - row * rh;
-		console.log("dy: " + dy);
 
 		var cw = Settings.width / 2;
 
 		var col = Math.floor(x / cw);
-		console.log("col: " + col);
 
 		var dx = x - col * cw;
-		console.log("dx: " + dx);
 
 		var delta = 0;
 		if ((row % 2 == 0 && col % 2 == 0) || (row % 2 == 1 && col % 2 == 1)) {
-			console.log("\n\\");
-			console.log("dx / dy: " + (dx / dy));
-			console.log("cw / rh: " + (cw / rh));
 			if (dy == 0 || dx / dy > cw / rh )
 				delta = 1;
 		} else {
-			console.log("\n/");
 			dx = cw - dx;
-			console.log("dx: " + dx);
-			console.log("dx / dy: " + (dx / dy));
-			console.log("-cw / rh: " + (cw / rh));
 			if (dx / dy < cw / rh )
 				delta = 1;
 		}
-		console.log("delta: " + delta);
 
 		var tx = col + delta, ty = row;
 
+		return this.find(tx, ty);
+	},
+
+	find: function(x, y) {
 		// FIXME this is dumb
 		for (var i = 0; i < this.triangles.length; i++) {
 			var t = this.triangles[i];
-			if (t.x == tx && t.y == ty)
+			if (t.x == x && t.y == y)
 				return t;
 		}
 
 		return undefined;
+	},
+
+	surrounding: function(t) {
+		var ts = [];
+		if (t.x > 0)
+			ts.push(this.find(t.x - 1, t.y));
+		if (t.x < Settings.cols)
+			ts.push(this.find(t.x + 1, t.y));
+		if (t.down() && t.y > 0)
+			ts.push(this.find(t.x, t.y - 1));
+		if (!t.down() && t.y < Settings.rows)
+			ts.push(this.find(t.x, t.y + 1));
+		return ts;
 	}
 }
 
